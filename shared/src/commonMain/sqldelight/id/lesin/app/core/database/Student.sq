@@ -1,0 +1,36 @@
+CREATE TABLE student_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    parent_name TEXT,
+    parent_phone TEXT,
+    subject TEXT NOT NULL,
+    price_per_session INTEGER NOT NULL,
+    billing_interval INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL
+);
+
+selectAll:
+SELECT *
+FROM student_entity
+ORDER BY name ASC;
+
+selectById:
+SELECT *
+FROM student_entity
+WHERE id = ?;
+
+insertStudent:
+INSERT INTO student_entity(
+    name,
+    parent_name,
+    parent_phone,
+    subject,
+    price_per_session,
+    billing_interval,
+    created_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteById:
+DELETE FROM student_entity
+WHERE id = ?;
