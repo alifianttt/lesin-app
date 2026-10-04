@@ -6,6 +6,7 @@ import id.lesin.app.core.database.LesinDatabase
 import id.lesin.app.feature.student.data.dto.StudentDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 class StudentLocalDataSourceImpl(
     database: LesinDatabase,
@@ -21,12 +22,12 @@ class StudentLocalDataSourceImpl(
     }
 
     override suspend fun getStudentById(id: Long): StudentDto? {
-        return queries
-            .selectById(id, ::mapStudent)
-            .executeAsOneOrNull()
+        return withContext(Dispatchers.Default) {
+            queries.selectById(id, ::mapStudent).executeAsOneOrNull()
+        }
     }
 
-    override suspend fun insertStudent(student: StudentDto) {
+    override suspend fun insertStudent(student: StudentDto): Unit = withContext(Dispatchers.Default) {
         queries.insertStudent(
             name = student.name,
             parent_name = student.parentName,
@@ -38,7 +39,19 @@ class StudentLocalDataSourceImpl(
         )
     }
 
-    override suspend fun deleteStudent(id: Long) {
+    override suspend fun updateStudent(student: StudentDto): Unit = withContext(Dispatchers.Default) {
+        queries.updateStudent(
+            name = student.name,
+            parent_name = student.parentName,
+            parent_phone = student.parentPhone,
+            subject = student.subject,
+            price_per_session = student.pricePerSession,
+            billing_interval = student.billingInterval.toLong(),
+            id = student.id,
+        )
+    }
+
+    override suspend fun deleteStudent(id: Long): Unit = withContext(Dispatchers.Default) {
         queries.deleteById(id)
     }
 

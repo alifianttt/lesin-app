@@ -31,6 +31,16 @@ INSERT INTO student_entity(
 )
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
+updateStudent:
+UPDATE student_entity
+SET name = ?,
+    parent_name = ?,
+    parent_phone = ?,
+    subject = ?,
+    price_per_session = ?,
+    billing_interval = ?
+WHERE id = ?;
+
 deleteById:
 DELETE FROM student_entity
 WHERE id = ?;

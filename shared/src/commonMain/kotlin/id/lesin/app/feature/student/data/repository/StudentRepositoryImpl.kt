@@ -29,4 +29,8 @@ class StudentRepositoryImpl(
     override suspend fun deleteStudent(id: Long) {
         localDataSource.deleteStudent(id)
     }
+
+    override suspend fun updateStudent(student: Student) {
+        localDataSource.updateStudent(student.toDto())
+    }
 }

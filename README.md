@@ -8,7 +8,7 @@ Lesin is a local-first private tutor assistant built with Kotlin Compose Multipl
 Schedule -> Attendance -> Session Report -> Auto Billing -> Payment Tracking
 ```
 
-This repository is currently a **base project**, not a complete MVP implementation. Business screens and complete feature flows are intentionally left for later iterations.
+The Student feature is implemented. Schedule, session, billing, and payment flows remain for later iterations.
 
 ## Base architecture
 
@@ -41,7 +41,7 @@ id.lesin.app
 
 ## Current foundation
 
-The base project includes one minimal `student` vertical slice to demonstrate the architecture without building the full Student UI:
+The Student feature follows the architecture from local persistence through to Compose screens:
 
 ```text
 StudentDto
@@ -49,11 +49,14 @@ StudentDto
 -> Student domain model
 -> StudentLocalDataSource
 -> StudentRepository
--> GetStudentsUseCase / CreateStudentUseCase
--> StudentListViewModel + StateFlow
+-> Student use cases and domain validation
+-> List / detail / form ViewModels + StateFlow
+-> Compose screens and typed navigation
 ```
 
-The initial SQLDelight `student_entity` table is included so local persistence and repository patterns are ready for future features.
+Open **Students** from the bottom navigation to search by name or subject, add a student, or view their details. The detail screen supports editing and deletion with confirmation. The form stores the student's name, subject, optional parent contacts, price in whole rupiah, and billing interval locally with SQLDelight.
+
+The screens follow `ui_lesin.pdf`, using compact rows, gray inputs, and black primary actions. Billing intervals are shown until session data is available for calculating live billing progress.
 
 ## Project structure
 
@@ -76,7 +79,9 @@ shared/src/commonMain/kotlin/id/lesin/app
         │   ├── repository
         │   └── usecase
         └── presentation
-            └── list
+            ├── list
+            ├── detail
+            └── form
 ```
 
 Future features should follow the same structure:
@@ -111,7 +116,15 @@ Android:
 
 iOS: open `iosApp/iosApp.xcodeproj` in Xcode and run the iOS target.
 
+Student business rules and ViewModel regression tests:
+
+```bash
+./gradlew :shared:testAndroidHostTest
+```
+
 ## Documentation
 
-- `AGENT.md` - architecture and coding rules for AI coding agents
-- `docs/PRD.md` - MVP product scope and base-project boundary
+- `AGENTS.md` - architecture and coding rules for AI coding agents
+- `PRD.md` - detailed product behavior and flows
+- `ui_lesin.pdf` - mobile screen design reference
+- `docs/PRD.md` - initial MVP scope and base-project boundary

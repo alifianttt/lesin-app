@@ -5,13 +5,19 @@ import id.lesin.app.feature.student.domain.repository.StudentRepository
 
 class CreateStudentUseCase(
     private val repository: StudentRepository,
+    private val validateStudentUseCase: ValidateStudentUseCase = ValidateStudentUseCase(),
 ) {
     suspend operator fun invoke(student: Student) {
-        require(student.name.isNotBlank()) { "Student name cannot be blank" }
-        require(student.subject.isNotBlank()) { "Subject cannot be blank" }
-        require(student.pricePerSession > 0L) { "Price per session must be greater than zero" }
-        require(student.billingInterval > 0) { "Billing interval must be greater than zero" }
+        val errors = validateStudentUseCase(
+            student.name, student.subject, student.pricePerSession, student.billingInterval,
+        )
+        if (errors.isNotEmpty()) throw StudentValidationException(errors)
 
-        repository.createStudent(student)
+        repository.createStudent(student.copy(
+            name = student.name.trim(),
+            subject = student.subject.trim(),
+            parentName = student.parentName?.trim()?.takeIf { it.isNotEmpty() },
+            parentPhone = student.parentPhone?.trim()?.takeIf { it.isNotEmpty() },
+        ))
     }
 }

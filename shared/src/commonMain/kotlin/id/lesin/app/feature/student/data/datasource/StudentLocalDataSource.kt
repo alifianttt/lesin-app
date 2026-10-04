@@ -7,5 +7,6 @@ interface StudentLocalDataSource {
     fun observeStudents(): Flow<List<StudentDto>>
     suspend fun getStudentById(id: Long): StudentDto?
     suspend fun insertStudent(student: StudentDto)
+    suspend fun updateStudent(student: StudentDto)
     suspend fun deleteStudent(id: Long)
 }

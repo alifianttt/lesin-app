@@ -3,6 +3,8 @@ package id.lesin.app.feature.student.presentation.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.lesin.app.feature.student.domain.usecase.GetStudentsUseCase
+import id.lesin.app.feature.student.domain.model.Student
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,31 +18,54 @@ class StudentListViewModel(
 
     private val _state = MutableStateFlow(StudentListUiState())
     val state: StateFlow<StudentListUiState> = _state.asStateFlow()
+    private var allStudents: List<Student> = emptyList()
+    private var observation: Job? = null
 
     init {
         observeStudents()
     }
 
     private fun observeStudents() {
-        viewModelScope.launch {
+        observation?.cancel()
+        _state.update { it.copy(isLoading = true, error = null) }
+        observation = viewModelScope.launch {
             getStudentsUseCase()
-                .catch { throwable ->
+                .catch {
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = throwable.message ?: "Unable to load students",
+                            error = "Unable to load students. Please try again.",
                         )
                     }
                 }
                 .collect { students ->
+                    allStudents = students
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            students = students,
+                            students = filterStudents(it.searchQuery),
+                            totalStudents = students.size,
                             error = null,
                         )
                     }
                 }
+        }
+    }
+
+    fun onEvent(event: StudentListEvent) {
+        when (event) {
+            is StudentListEvent.SearchChanged -> _state.update {
+                it.copy(searchQuery = event.value, students = filterStudents(event.value))
+            }
+            StudentListEvent.RetryClicked -> observeStudents()
+        }
+    }
+
+    private fun filterStudents(query: String): List<Student> {
+        val search = query.trim()
+        return allStudents.filter {
+            it.name.contains(search, ignoreCase = true) ||
+                it.subject.contains(search, ignoreCase = true)
         }
     }
 }

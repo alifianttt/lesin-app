@@ -8,6 +8,12 @@ import id.lesin.app.feature.student.data.repository.StudentRepositoryImpl
 import id.lesin.app.feature.student.domain.repository.StudentRepository
 import id.lesin.app.feature.student.domain.usecase.CreateStudentUseCase
 import id.lesin.app.feature.student.domain.usecase.GetStudentsUseCase
+import id.lesin.app.feature.student.domain.usecase.DeleteStudentUseCase
+import id.lesin.app.feature.student.domain.usecase.GetStudentDetailUseCase
+import id.lesin.app.feature.student.domain.usecase.UpdateStudentUseCase
+import id.lesin.app.feature.student.domain.usecase.ValidateStudentUseCase
+import id.lesin.app.feature.student.presentation.detail.StudentDetailViewModel
+import id.lesin.app.feature.student.presentation.form.StudentFormViewModel
 import id.lesin.app.feature.student.presentation.list.StudentListViewModel
 import id.lesin.app.feature.home.presentation.HomeViewModel
 import org.koin.core.module.dsl.viewModel
@@ -29,9 +35,15 @@ private val studentModule = module {
     single<StudentRepository> { StudentRepositoryImpl(get()) }
 
     factory { GetStudentsUseCase(get()) }
-    factory { CreateStudentUseCase(get()) }
+    factory { ValidateStudentUseCase() }
+    factory { CreateStudentUseCase(get(), get()) }
+    factory { UpdateStudentUseCase(get(), get()) }
+    factory { GetStudentDetailUseCase(get()) }
+    factory { DeleteStudentUseCase(get()) }
 
     viewModel { StudentListViewModel(get()) }
+    viewModel { parameters -> StudentFormViewModel(parameters.getOrNull<Long>(), get(), get(), get(), get()) }
+    viewModel { parameters -> StudentDetailViewModel(parameters.get<Long>(), get(), get()) }
 }
 
 private val homeModule = module {
