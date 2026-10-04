@@ -54,6 +54,11 @@ class CreateStudentUseCaseTest {
             savedStudents += student
         }
 
+        override suspend fun updateStudent(student: Student) {
+            val index = savedStudents.indexOfFirst { it.id == student.id }
+            savedStudents[index] = student
+        }
+
         override suspend fun deleteStudent(id: Long) {
             savedStudents.removeAll { it.id == id }
         }
