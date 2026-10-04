@@ -8,7 +8,7 @@ import id.lesin.app.core.database.DatabaseDriverFactory
 import id.lesin.app.core.designsystem.LesinColors
 import id.lesin.app.core.designsystem.LesinTheme
 import id.lesin.app.core.di.appModules
-import id.lesin.app.feature.home.presentation.HomeScreen
+import id.lesin.app.navigation.AppNavigation
 import org.koin.compose.KoinApplication
 import org.koin.dsl.koinConfiguration
 
@@ -26,7 +26,7 @@ fun App(
                 modifier = Modifier.fillMaxSize(),
                 color = LesinColors.Canvas,
             ) {
-                HomeScreen()
+                AppNavigation()
             }
         }
     }

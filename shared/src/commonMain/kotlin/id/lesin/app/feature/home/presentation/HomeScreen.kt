@@ -8,9 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.lesin.app.core.designsystem.LesinColors
+import id.lesin.app.core.designsystem.LesinBottomNavigation
+import id.lesin.app.core.designsystem.LesinTab
 import id.lesin.app.core.designsystem.LesinSpacing
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -85,7 +85,7 @@ fun HomeContent(
             }
             Spacer(Modifier.height(LesinSpacing.Xl))
         }
-        BottomNavigation(onStudentsClick, onBillingClick)
+        LesinBottomNavigation(LesinTab.HOME, {}, onStudentsClick, onBillingClick)
     }
 }
 
@@ -125,17 +125,6 @@ private fun LaterSessionRow(session: HomeSessionUiModel) {
                 Text(session.subject, fontSize = 13.sp, color = LesinColors.Muted, modifier = Modifier.padding(top = 2.dp))
             }
             Text(session.statusLabel, fontSize = 10.sp, color = LesinColors.Charcoal, modifier = Modifier.background(LesinColors.SurfaceStrong, RoundedCornerShape(50)).padding(horizontal = 9.dp, vertical = 5.dp))
-        }
-    }
-}
-
-@Composable
-private fun BottomNavigation(onStudentsClick: () -> Unit, onBillingClick: () -> Unit) {
-    Surface(color = LesinColors.Canvas, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = LesinSpacing.Xl, vertical = LesinSpacing.Md), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("⌂\nHome", color = LesinColors.Ink, fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
-            Text("S\nStudents", color = LesinColors.Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(horizontal = 22.dp).clickable(onClick = onStudentsClick))
-            Text("B\nBilling", color = LesinColors.Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(horizontal = 22.dp).clickable(onClick = onBillingClick))
         }
     }
 }
