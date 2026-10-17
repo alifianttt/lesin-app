@@ -73,6 +73,11 @@ kotlin {
             implementation(libs.sqldelight.coroutines)
         }
 
+        getByName("androidHostTest").dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
+            implementation(libs.robolectric)
+        }
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)

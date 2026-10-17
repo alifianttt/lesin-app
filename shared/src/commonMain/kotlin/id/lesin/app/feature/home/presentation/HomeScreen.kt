@@ -1,6 +1,7 @@
 package id.lesin.app.feature.home.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,9 +15,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,29 +28,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import id.lesin.app.core.designsystem.LesinColors
 import id.lesin.app.core.designsystem.LesinBottomNavigation
-import id.lesin.app.core.designsystem.LesinTab
+import id.lesin.app.core.designsystem.LesinColors
 import id.lesin.app.core.designsystem.LesinSpacing
+import id.lesin.app.core.designsystem.LesinTab
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
-    onStartSession: () -> Unit = {},
+    onStartSession: (Long) -> Unit,
     onStudentsClick: () -> Unit = {},
     onBillingClick: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeContent(state, onStartSession, onStudentsClick, onBillingClick)
+    HomeContent(state, onStartSession, onStudentsClick, onBillingClick, viewModel::onEvent)
 }
 
 @Composable
 fun HomeContent(
     state: HomeUiState,
-    onStartSession: () -> Unit,
+    onStartSession: (Long) -> Unit,
     onStudentsClick: () -> Unit,
     onBillingClick: () -> Unit,
+    onEvent: (HomeEvent) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -64,6 +68,11 @@ fun HomeContent(
             Text("Today", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = LesinColors.Ink)
             Text(state.dateLabel, fontSize = 14.sp, color = LesinColors.Muted, modifier = Modifier.padding(top = 4.dp))
 
+            if (state.isLoading) CircularProgressIndicator(color = LesinColors.Ink)
+            state.error?.let {
+                Text(it, color = LesinColors.Error)
+                TextButton(onClick = { onEvent(HomeEvent.RetryClicked) }) { Text("Try again") }
+            }
             Spacer(Modifier.height(LesinSpacing.Xxl))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 SummaryMetric(state.sessionCount.toString(), "Sessions")
@@ -73,14 +82,17 @@ fun HomeContent(
             Spacer(Modifier.height(LesinSpacing.Xl))
             Text("NEXT SESSION", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = LesinColors.Muted)
             Spacer(Modifier.height(LesinSpacing.Sm))
-            state.nextSession?.let { NextSessionCard(it, onStartSession) }
-                ?: Text("No students added yet", fontSize = 14.sp, color = LesinColors.Muted)
+            state.nextSession?.let { session -> NextSessionCard(session) { onStartSession(session.scheduleId) } }
+            if (state.nextSession == null && !state.isLoading && state.error == null) {
+                Text("No upcoming sessions today", fontSize = 14.sp, color = LesinColors.Muted)
+                TextButton(onClick = onStudentsClick) { Text("Create a schedule from Students") }
+            }
 
             Spacer(Modifier.height(LesinSpacing.Xl))
-            Text("Later Today", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = LesinColors.Ink)
+            Text("More sessions", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = LesinColors.Ink)
             Spacer(Modifier.height(LesinSpacing.Sm))
             state.laterSessions.forEachIndexed { index, session ->
-                LaterSessionRow(session)
+                LaterSessionRow(session) { onStartSession(session.scheduleId) }
                 if (index < state.laterSessions.lastIndex) HorizontalDivider(color = LesinColors.Hairline)
             }
             Spacer(Modifier.height(LesinSpacing.Xl))
@@ -107,17 +119,17 @@ private fun NextSessionCard(session: HomeSessionUiModel, onStartSession: () -> U
             }
             Text(session.studentName, fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = LesinColors.Ink, modifier = Modifier.padding(top = 18.dp))
             Text(session.subject, fontSize = 14.sp, color = LesinColors.Muted, modifier = Modifier.padding(top = 3.dp))
-            session.priceLabel?.let { Text(it, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = LesinColors.Ink, modifier = Modifier.padding(top = 14.dp)) }
+            Text(session.priceLabel, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = LesinColors.Ink, modifier = Modifier.padding(top = 14.dp))
             Button(onClick = onStartSession, modifier = Modifier.fillMaxWidth().padding(top = LesinSpacing.Lg), shape = RoundedCornerShape(50), colors = ButtonDefaults.buttonColors(containerColor = LesinColors.Ink)) {
-                Text("Start Session", color = LesinColors.OnInk)
+                Text(if (session.isActive) "Resume Session" else "Start Session", color = LesinColors.OnInk)
             }
         }
     }
 }
 
 @Composable
-private fun LaterSessionRow(session: HomeSessionUiModel) {
-    Column(Modifier.fillMaxWidth().padding(vertical = LesinSpacing.Md)) {
+private fun LaterSessionRow(session: HomeSessionUiModel, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = LesinSpacing.Md)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
                 Text(session.timeLabel, fontSize = 12.sp, color = LesinColors.Muted)
