@@ -54,6 +54,16 @@ internal class FakeScheduleRepository(initialSchedules: List<Schedule> = emptyLi
         })
     }
 
+    override fun observeSchedulesInRange(start: Long, end: Long): Flow<List<Schedule>> = flow {
+        loadError?.let { throw it }
+        emitAll(schedules.map { all -> all.filter { it.startTime >= start && it.startTime < end }.sortedBy { it.startTime } })
+    }
+
+    override suspend fun getSchedule(id: Long): Schedule? {
+        loadError?.let { throw it }
+        return schedules.value.firstOrNull { it.id == id }
+    }
+
     override suspend fun createSchedule(schedule: Schedule) {
         saveGate?.await()
         saveError?.let { throw it }

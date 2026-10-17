@@ -1,6 +1,10 @@
 package id.lesin.app.feature.student.presentation
 
 import androidx.lifecycle.ViewModel
+import id.lesin.app.feature.session.FakeSessionRepository
+import id.lesin.app.feature.session.testSession
+import id.lesin.app.feature.session.domain.model.SessionStatus
+import id.lesin.app.feature.session.domain.usecase.GetSessionHistoryUseCase
 import androidx.lifecycle.ViewModelStore
 import id.lesin.app.feature.schedule.FakeScheduleRepository
 import id.lesin.app.feature.schedule.testSchedule
@@ -69,8 +73,14 @@ class StudentViewModelTest {
         onEvent(StudentFormEvent.PriceChanged("150000"))
     }
 
-    private fun detail(students: FakeStudentRepository, schedules: FakeScheduleRepository = FakeScheduleRepository()) =
-        track(StudentDetailViewModel(1L, GetStudentDetailUseCase(students), DeleteStudentUseCase(students), GetSchedulesByStudentUseCase(schedules)))
+    private fun detail(
+        students: FakeStudentRepository,
+        schedules: FakeScheduleRepository = FakeScheduleRepository(),
+        sessions: FakeSessionRepository = FakeSessionRepository(schedules),
+    ) = track(StudentDetailViewModel(
+        1L, GetStudentDetailUseCase(students), DeleteStudentUseCase(students),
+        GetSchedulesByStudentUseCase(schedules), GetSessionHistoryUseCase(sessions),
+    ))
 
     @Test
     fun newFormStartsEmptyWithDefaultBillingInterval() {
@@ -284,4 +294,32 @@ class StudentViewModelTest {
         assertNull(viewModel.state.value.error)
         assertEquals(1, viewModel.state.value.schedules.size)
     }
+    @Test
+    fun detailShowsCompletedSessionHistoryAndReflectsNewCompletions() = runTest(dispatcher) {
+        val schedules = FakeScheduleRepository()
+        val completed = testSession().copy(status = SessionStatus.COMPLETED)
+        val sessions = FakeSessionRepository(schedules, listOf(
+            completed, completed.copy(id = 2, scheduleId = 2, studentId = 2),
+            testSession().copy(id = 3, scheduleId = 3),
+        ))
+        val viewModel = detail(FakeStudentRepository(listOf(testStudent())), schedules, sessions)
+        runCurrent()
+        assertEquals(listOf(1L), viewModel.state.value.sessions.map { it.id })
+        sessions.sessions.value = sessions.sessions.value.map { it.copy(status = SessionStatus.COMPLETED) }
+        runCurrent()
+        assertEquals(listOf(1L, 3L), viewModel.state.value.sessions.map { it.id })
+    }
+
+    @Test
+    fun historyLoadingFailureOnDetailCanBeRetried() = runTest(dispatcher) {
+        val sessions = FakeSessionRepository().apply { loadError = IllegalStateException() }
+        val viewModel = detail(FakeStudentRepository(listOf(testStudent())), sessions = sessions)
+        runCurrent()
+        assertNotNull(viewModel.state.value.error)
+        sessions.loadError = null
+        viewModel.onEvent(StudentDetailEvent.RetryClicked)
+        runCurrent()
+        assertNull(viewModel.state.value.error)
+    }
+
 }
