@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,6 +26,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.lesin.app.core.designsystem.LesinColors
 import id.lesin.app.core.designsystem.LesinSpacing
 import id.lesin.app.core.util.CurrencyFormatter
+import id.lesin.app.core.util.DateTimeFormatter
+import id.lesin.app.feature.schedule.domain.model.Schedule
+import id.lesin.app.feature.schedule.domain.model.ScheduleStatus
 import id.lesin.app.feature.student.presentation.StudentError
 import id.lesin.app.feature.student.presentation.StudentHeader
 import id.lesin.app.feature.student.presentation.StudentLoading
@@ -38,6 +43,7 @@ fun StudentDetailScreen(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
     onDeleted: () -> Unit,
+    onCreateSchedule: (Long) -> Unit,
     viewModel: StudentDetailViewModel = koinViewModel { parametersOf(studentId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -50,7 +56,7 @@ fun StudentDetailScreen(
         }
     }
     NavigationBackHandler(enabled = state.isDeleting) {}
-    StudentDetailContent(state, viewModel::onEvent, onBack, onEdit)
+    StudentDetailContent(state, viewModel::onEvent, onBack, onEdit, onCreateSchedule)
 }
 
 @Composable
@@ -59,6 +65,7 @@ fun StudentDetailContent(
     onEvent: (StudentDetailEvent) -> Unit,
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
+    onCreateSchedule: (Long) -> Unit,
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         StudentHeader("Student", onBack, enabled = !state.isDeleting) {
@@ -96,6 +103,21 @@ fun StudentDetailContent(
                         DetailRow("Phone", student.parentPhone ?: "Not provided")
                     }
                     HorizontalDivider(color = LesinColors.Hairline)
+                    Button(
+                        onClick = { onCreateSchedule(student.id) },
+                        enabled = !state.isDeleting,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Create schedule", modifier = Modifier.padding(vertical = LesinSpacing.Sm)) }
+                    Column(verticalArrangement = Arrangement.spacedBy(LesinSpacing.Md)) {
+                        Text("Schedules", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                        if (state.schedules.isEmpty()) {
+                            Text("No schedules yet", color = LesinColors.Muted)
+                        } else {
+                            state.schedules.forEach { schedule -> ScheduleRow(schedule) }
+                        }
+                    }
+                    HorizontalDivider(color = LesinColors.Hairline)
                     Column(verticalArrangement = Arrangement.spacedBy(LesinSpacing.Md)) {
                         Text("Recent sessions", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                         Text("No sessions yet", color = LesinColors.Muted)
@@ -113,7 +135,7 @@ fun StudentDetailContent(
         AlertDialog(
             onDismissRequest = { onEvent(StudentDetailEvent.DeleteDismissed) },
             title = { Text("Delete student?") },
-            text = { Text("${state.student?.name ?: "This student"} will be removed. This cannot be undone.") },
+            text = { Text("${state.student?.name ?: "This student"} and their schedules will be removed. This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = { onEvent(StudentDetailEvent.DeleteConfirmed) }, enabled = !state.isDeleting) {
                     Text(if (state.isDeleting) "Deleting…" else "Delete", color = LesinColors.Error)
@@ -123,6 +145,23 @@ fun StudentDetailContent(
                 TextButton(onClick = { onEvent(StudentDetailEvent.DeleteDismissed) }, enabled = !state.isDeleting) { Text("Cancel") }
             },
         )
+    }
+}
+
+@Composable
+private fun ScheduleRow(schedule: Schedule) {
+    val timeRange = DateTimeFormatter.formatTime(schedule.startTime) +
+        (schedule.endTime?.let { " – ${DateTimeFormatter.formatTime(it)}" } ?: "")
+    val statusLabel = when (schedule.status) {
+        ScheduleStatus.SCHEDULED -> "Scheduled"
+        ScheduleStatus.IN_PROGRESS -> "In progress"
+        ScheduleStatus.COMPLETED -> "Completed"
+        ScheduleStatus.CANCELLED -> "Cancelled"
+    }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(LesinSpacing.Xs)) {
+        Text("${DateTimeFormatter.formatDate(schedule.startTime)} · $timeRange", fontWeight = FontWeight.Medium)
+        Text(schedule.subject, fontSize = 15.sp)
+        Text("${CurrencyFormatter.formatRupiah(schedule.price)} · $statusLabel", color = LesinColors.Muted, fontSize = 13.sp)
     }
 }
 

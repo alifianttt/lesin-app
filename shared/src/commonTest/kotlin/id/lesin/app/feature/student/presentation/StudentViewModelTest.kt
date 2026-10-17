@@ -2,6 +2,9 @@ package id.lesin.app.feature.student.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStore
+import id.lesin.app.feature.schedule.FakeScheduleRepository
+import id.lesin.app.feature.schedule.testSchedule
+import id.lesin.app.feature.schedule.domain.usecase.GetSchedulesByStudentUseCase
 import id.lesin.app.feature.student.FakeStudentRepository
 import id.lesin.app.feature.student.testStudent
 import id.lesin.app.feature.student.domain.usecase.CreateStudentUseCase
@@ -65,6 +68,9 @@ class StudentViewModelTest {
         onEvent(StudentFormEvent.SubjectChanged("Mathematics"))
         onEvent(StudentFormEvent.PriceChanged("150000"))
     }
+
+    private fun detail(students: FakeStudentRepository, schedules: FakeScheduleRepository = FakeScheduleRepository()) =
+        track(StudentDetailViewModel(1L, GetStudentDetailUseCase(students), DeleteStudentUseCase(students), GetSchedulesByStudentUseCase(schedules)))
 
     @Test
     fun newFormStartsEmptyWithDefaultBillingInterval() {
@@ -221,7 +227,7 @@ class StudentViewModelTest {
     @Test
     fun detailReflectsUpdatesAndRequiresConfirmationToDelete() = runTest(dispatcher) {
         val repository = FakeStudentRepository(listOf(testStudent()))
-        val viewModel = track(StudentDetailViewModel(1L, GetStudentDetailUseCase(repository), DeleteStudentUseCase(repository)))
+        val viewModel = detail(repository)
         runCurrent()
         assertEquals("Budi", viewModel.state.value.student?.name)
         repository.updateStudent(testStudent().copy(name = "Andi"))
@@ -244,7 +250,7 @@ class StudentViewModelTest {
     @Test
     fun failedDeletionKeepsStudentAndShowsError() = runTest(dispatcher) {
         val repository = FakeStudentRepository(listOf(testStudent())).apply { deleteError = IllegalStateException() }
-        val viewModel = track(StudentDetailViewModel(1L, GetStudentDetailUseCase(repository), DeleteStudentUseCase(repository)))
+        val viewModel = detail(repository)
         runCurrent()
         viewModel.onEvent(StudentDetailEvent.DeleteClicked)
         viewModel.onEvent(StudentDetailEvent.DeleteConfirmed)
@@ -252,5 +258,30 @@ class StudentViewModelTest {
         assertFalse(viewModel.state.value.isDeleting)
         assertNotNull(viewModel.state.value.error)
         assertNotNull(viewModel.state.value.student)
+    }
+
+    @Test
+    fun detailShowsOnlySelectedStudentsSchedulesAndUpdatesAfterCreation() = runTest(dispatcher) {
+        val schedules = FakeScheduleRepository(listOf(testSchedule(), testSchedule(2L, 2L)))
+        val viewModel = detail(FakeStudentRepository(listOf(testStudent())), schedules)
+        runCurrent()
+        assertEquals(listOf(1L), viewModel.state.value.schedules.map { it.id })
+        schedules.createSchedule(testSchedule().copy(startTime = testSchedule().startTime - 60_000L))
+        runCurrent()
+        assertEquals(listOf(3L, 1L), viewModel.state.value.schedules.map { it.id })
+    }
+
+    @Test
+    fun scheduleLoadingFailureOnDetailCanBeRetried() = runTest(dispatcher) {
+        val schedules = FakeScheduleRepository(listOf(testSchedule())).apply { loadError = IllegalStateException() }
+        val viewModel = detail(FakeStudentRepository(listOf(testStudent())), schedules)
+        runCurrent()
+        assertFalse(viewModel.state.value.isLoading)
+        assertNotNull(viewModel.state.value.error)
+        schedules.loadError = null
+        viewModel.onEvent(StudentDetailEvent.RetryClicked)
+        runCurrent()
+        assertNull(viewModel.state.value.error)
+        assertEquals(1, viewModel.state.value.schedules.size)
     }
 }

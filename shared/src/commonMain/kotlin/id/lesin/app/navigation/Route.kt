@@ -7,6 +7,7 @@ sealed interface Route {
     data object Students : Route
     data class StudentDetail(val studentId: Long) : Route
     data class StudentForm(val studentId: Long? = null) : Route
+    data class ScheduleForm(val studentId: Long) : Route
 }
 
 internal val RouteSaver = Saver<Route, String>(
@@ -16,6 +17,7 @@ internal val RouteSaver = Saver<Route, String>(
             Route.Students -> "students"
             is Route.StudentDetail -> "detail:${route.studentId}"
             is Route.StudentForm -> "form:${route.studentId ?: "new"}"
+            is Route.ScheduleForm -> "schedule-form:${route.studentId}"
         }
     },
     restore = { value ->
@@ -24,6 +26,7 @@ internal val RouteSaver = Saver<Route, String>(
             value == "students" -> Route.Students
             value.startsWith("detail:") -> Route.StudentDetail(value.substringAfter(':').toLong())
             value.startsWith("form:") -> Route.StudentForm(value.substringAfter(':').toLongOrNull())
+            value.startsWith("schedule-form:") -> Route.ScheduleForm(value.substringAfter(':').toLong())
             else -> Route.Home
         }
     },
@@ -33,4 +36,5 @@ internal fun Route.parent(): Route = when (this) {
     Route.Home, Route.Students -> Route.Home
     is Route.StudentDetail -> Route.Students
     is Route.StudentForm -> studentId?.let(Route::StudentDetail) ?: Route.Students
+    is Route.ScheduleForm -> Route.StudentDetail(studentId)
 }

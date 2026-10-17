@@ -9,6 +9,11 @@ class IosDatabaseDriverFactory : DatabaseDriverFactory {
         return NativeSqliteDriver(
             schema = LesinDatabase.Schema,
             name = DATABASE_NAME,
+            onConfiguration = { configuration ->
+                configuration.copy(
+                    extendedConfig = configuration.extendedConfig.copy(foreignKeyConstraints = true),
+                )
+            },
         )
     }
 

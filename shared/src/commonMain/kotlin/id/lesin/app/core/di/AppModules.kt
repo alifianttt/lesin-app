@@ -2,6 +2,14 @@ package id.lesin.app.core.di
 
 import id.lesin.app.core.database.DatabaseDriverFactory
 import id.lesin.app.core.database.LesinDatabase
+import id.lesin.app.feature.schedule.data.datasource.ScheduleLocalDataSource
+import id.lesin.app.feature.schedule.data.datasource.ScheduleLocalDataSourceImpl
+import id.lesin.app.feature.schedule.data.repository.ScheduleRepositoryImpl
+import id.lesin.app.feature.schedule.domain.repository.ScheduleRepository
+import id.lesin.app.feature.schedule.domain.usecase.CreateScheduleUseCase
+import id.lesin.app.feature.schedule.domain.usecase.GetSchedulesByStudentUseCase
+import id.lesin.app.feature.schedule.domain.usecase.ValidateScheduleUseCase
+import id.lesin.app.feature.schedule.presentation.form.ScheduleFormViewModel
 import id.lesin.app.feature.student.data.datasource.StudentLocalDataSource
 import id.lesin.app.feature.student.data.datasource.StudentLocalDataSourceImpl
 import id.lesin.app.feature.student.data.repository.StudentRepositoryImpl
@@ -22,6 +30,7 @@ import org.koin.dsl.module
 fun appModules(databaseDriverFactory: DatabaseDriverFactory) = listOf(
     databaseModule(databaseDriverFactory),
     studentModule,
+    scheduleModule,
     homeModule,
 )
 
@@ -43,7 +52,18 @@ private val studentModule = module {
 
     viewModel { StudentListViewModel(get()) }
     viewModel { parameters -> StudentFormViewModel(parameters.getOrNull<Long>(), get(), get(), get(), get()) }
-    viewModel { parameters -> StudentDetailViewModel(parameters.get<Long>(), get(), get()) }
+    viewModel { parameters -> StudentDetailViewModel(parameters.get<Long>(), get(), get(), get()) }
+}
+
+private val scheduleModule = module {
+    single<ScheduleLocalDataSource> { ScheduleLocalDataSourceImpl(get()) }
+    single<ScheduleRepository> { ScheduleRepositoryImpl(get()) }
+
+    factory { ValidateScheduleUseCase() }
+    factory { CreateScheduleUseCase(get(), get(), get()) }
+    factory { GetSchedulesByStudentUseCase(get()) }
+
+    viewModel { parameters -> ScheduleFormViewModel(parameters.get<Long>(), get(), get(), get()) }
 }
 
 private val homeModule = module {

@@ -8,7 +8,7 @@ Lesin is a local-first private tutor assistant built with Kotlin Compose Multipl
 Schedule -> Attendance -> Session Report -> Auto Billing -> Payment Tracking
 ```
 
-The Student feature is implemented. Schedule, session, billing, and payment flows remain for later iterations.
+Student management and schedule creation from Student Detail are implemented. Session, billing, and payment flows remain for later iterations.
 
 ## Base architecture
 
@@ -58,6 +58,8 @@ Open **Students** from the bottom navigation to search by name or subject, add a
 
 The screens follow `ui_lesin.pdf`, using compact rows, gray inputs, and black primary actions. Billing intervals are shown until session data is available for calculating live billing progress.
 
+From **Student Detail**, choose **Create schedule** to open a form with the student selected and their subject and rate prefilled. Choose a date and start time, optionally set an end time later on the same day, and save. Subject and price can be changed for that schedule without changing the student. Saved schedules appear on Student Detail in chronological order and remain available offline. Dates and times use the device time zone and are stored as epoch milliseconds. The database migrates existing student data automatically; deleting a student also deletes their schedules.
+
 ## Project structure
 
 ```text
@@ -68,26 +70,29 @@ shared/src/commonMain/kotlin/id/lesin/app
 │   ├── di
 │   └── util
 └── feature
-    └── student
+    ├── student
+    │   ├── data
+    │   │   ├── datasource
+    │   │   ├── dto
+    │   │   ├── mapper
+    │   │   └── repository
+    │   ├── domain
+    │   │   ├── model
+    │   │   ├── repository
+    │   │   └── usecase
+    │   └── presentation
+    │       ├── list
+    │       ├── detail
+    │       └── form
+    └── schedule
         ├── data
-        │   ├── datasource
-        │   ├── dto
-        │   ├── mapper
-        │   └── repository
         ├── domain
-        │   ├── model
-        │   ├── repository
-        │   └── usecase
-        └── presentation
-            ├── list
-            ├── detail
-            └── form
+        └── presentation/form
 ```
 
 Future features should follow the same structure:
 
 ```text
-feature/schedule
 feature/session
 feature/billing
 feature/payment
@@ -116,7 +121,7 @@ Android:
 
 iOS: open `iosApp/iosApp.xcodeproj` in Xcode and run the iOS target.
 
-Student business rules and ViewModel regression tests:
+Student and schedule business rules and ViewModel regression tests:
 
 ```bash
 ./gradlew :shared:testAndroidHostTest

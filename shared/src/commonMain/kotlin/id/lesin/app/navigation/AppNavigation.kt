@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import id.lesin.app.feature.home.presentation.HomeScreen
+import id.lesin.app.feature.schedule.presentation.form.ScheduleFormScreen
 import id.lesin.app.feature.student.presentation.detail.StudentDetailScreen
 import id.lesin.app.feature.student.presentation.form.StudentFormScreen
 import id.lesin.app.feature.student.presentation.list.StudentListScreen
@@ -59,6 +60,7 @@ fun AppNavigation() {
                             studentId = currentRoute.studentId,
                             onBack = onBack,
                             onEdit = { route = Route.StudentForm(it) },
+                            onCreateSchedule = { route = Route.ScheduleForm(it) },
                             onDeleted = {
                                 route = Route.Students
                                 scope.launch { snackbarHostState.showSnackbar("Student deleted") }
@@ -70,6 +72,14 @@ fun AppNavigation() {
                             onSaved = {
                                 route = currentRoute.parent()
                                 scope.launch { snackbarHostState.showSnackbar("Student saved") }
+                            },
+                        )
+                        is Route.ScheduleForm -> ScheduleFormScreen(
+                            studentId = currentRoute.studentId,
+                            onBack = onBack,
+                            onSaved = {
+                                route = currentRoute.parent()
+                                scope.launch { snackbarHostState.showSnackbar("Schedule saved") }
                             },
                         )
                     }

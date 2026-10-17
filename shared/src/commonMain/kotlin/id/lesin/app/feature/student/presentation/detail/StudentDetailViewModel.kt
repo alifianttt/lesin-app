@@ -2,6 +2,7 @@ package id.lesin.app.feature.student.presentation.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import id.lesin.app.feature.schedule.domain.usecase.GetSchedulesByStudentUseCase
 import id.lesin.app.feature.student.domain.usecase.DeleteStudentUseCase
 import id.lesin.app.feature.student.domain.usecase.GetStudentDetailUseCase
 import kotlinx.coroutines.CancellationException
@@ -10,6 +11,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -18,6 +20,7 @@ class StudentDetailViewModel(
     private val studentId: Long,
     private val getStudentDetailUseCase: GetStudentDetailUseCase,
     private val deleteStudentUseCase: DeleteStudentUseCase,
+    private val getSchedulesByStudentUseCase: GetSchedulesByStudentUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(StudentDetailUiState())
     val state = _state.asStateFlow()
@@ -47,12 +50,14 @@ class StudentDetailViewModel(
         observation?.cancel()
         _state.update { it.copy(isLoading = true, error = null) }
         observation = viewModelScope.launch {
-            getStudentDetailUseCase(studentId)
+            combine(getStudentDetailUseCase(studentId), getSchedulesByStudentUseCase(studentId)) { student, schedules ->
+                student to schedules
+            }
                 .catch {
-                    _state.update { it.copy(isLoading = false, error = "Unable to load this student. Please try again.") }
+                    _state.update { it.copy(isLoading = false, error = "Unable to load student details. Please try again.") }
                 }
-                .collect { student ->
-                    _state.update { it.copy(isLoading = false, student = student, error = null) }
+                .collect { (student, schedules) ->
+                    _state.update { it.copy(isLoading = false, student = student, schedules = schedules, error = null) }
                 }
         }
     }
