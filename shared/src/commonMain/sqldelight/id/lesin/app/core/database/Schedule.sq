@@ -1,0 +1,22 @@
+CREATE TABLE schedule_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES student_entity(id) ON DELETE CASCADE,
+    scheduled_date INTEGER NOT NULL,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER CHECK (end_time IS NULL OR end_time > start_time),
+    subject TEXT NOT NULL CHECK (length(trim(subject)) > 0),
+    price INTEGER NOT NULL CHECK (price > 0),
+    status TEXT NOT NULL CHECK (status IN ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX schedule_student_start ON schedule_entity(student_id, start_time);
+
+selectByStudent:
+SELECT * FROM schedule_entity
+WHERE student_id = ?
+ORDER BY start_time ASC, id ASC;
+
+insertSchedule:
+INSERT INTO schedule_entity(student_id, scheduled_date, start_time, end_time, subject, price, status, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
