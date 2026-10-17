@@ -3,6 +3,7 @@ package id.lesin.app.feature.student.presentation.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.lesin.app.feature.schedule.domain.usecase.GetSchedulesByStudentUseCase
+import id.lesin.app.feature.session.domain.usecase.GetSessionHistoryUseCase
 import id.lesin.app.feature.student.domain.usecase.DeleteStudentUseCase
 import id.lesin.app.feature.student.domain.usecase.GetStudentDetailUseCase
 import kotlinx.coroutines.CancellationException
@@ -21,6 +22,7 @@ class StudentDetailViewModel(
     private val getStudentDetailUseCase: GetStudentDetailUseCase,
     private val deleteStudentUseCase: DeleteStudentUseCase,
     private val getSchedulesByStudentUseCase: GetSchedulesByStudentUseCase,
+    private val getSessionHistoryUseCase: GetSessionHistoryUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(StudentDetailUiState())
     val state = _state.asStateFlow()
@@ -50,14 +52,16 @@ class StudentDetailViewModel(
         observation?.cancel()
         _state.update { it.copy(isLoading = true, error = null) }
         observation = viewModelScope.launch {
-            combine(getStudentDetailUseCase(studentId), getSchedulesByStudentUseCase(studentId)) { student, schedules ->
-                student to schedules
+            combine(
+                getStudentDetailUseCase(studentId), getSchedulesByStudentUseCase(studentId), getSessionHistoryUseCase(studentId),
+            ) { student, schedules, sessions ->
+                Triple(student, schedules, sessions)
             }
                 .catch {
                     _state.update { it.copy(isLoading = false, error = "Unable to load student details. Please try again.") }
                 }
-                .collect { (student, schedules) ->
-                    _state.update { it.copy(isLoading = false, student = student, schedules = schedules, error = null) }
+                .collect { (student, schedules, sessions) ->
+                    _state.update { it.copy(isLoading = false, student = student, schedules = schedules, sessions = sessions, error = null) }
                 }
         }
     }

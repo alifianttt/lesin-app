@@ -44,6 +44,7 @@ fun StudentDetailScreen(
     onEdit: (Long) -> Unit,
     onDeleted: () -> Unit,
     onCreateSchedule: (Long) -> Unit,
+    onSessionClick: (Long) -> Unit,
     viewModel: StudentDetailViewModel = koinViewModel { parametersOf(studentId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -56,7 +57,7 @@ fun StudentDetailScreen(
         }
     }
     NavigationBackHandler(enabled = state.isDeleting) {}
-    StudentDetailContent(state, viewModel::onEvent, onBack, onEdit, onCreateSchedule)
+    StudentDetailContent(state, viewModel::onEvent, onBack, onEdit, onCreateSchedule, onSessionClick)
 }
 
 @Composable
@@ -66,6 +67,7 @@ fun StudentDetailContent(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
     onCreateSchedule: (Long) -> Unit,
+    onSessionClick: (Long) -> Unit,
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         StudentHeader("Student", onBack, enabled = !state.isDeleting) {
@@ -114,13 +116,28 @@ fun StudentDetailContent(
                         if (state.schedules.isEmpty()) {
                             Text("No schedules yet", color = LesinColors.Muted)
                         } else {
-                            state.schedules.forEach { schedule -> ScheduleRow(schedule) }
+                            state.schedules.forEach { schedule ->
+                                ScheduleRow(schedule)
+                                if (schedule.status == ScheduleStatus.SCHEDULED || schedule.status == ScheduleStatus.IN_PROGRESS) {
+                                    TextButton(onClick = { onSessionClick(schedule.id) }, enabled = !state.isDeleting) {
+                                        Text(if (schedule.status == ScheduleStatus.IN_PROGRESS) "Resume session" else "Start session")
+                                    }
+                                }
+                            }
                         }
                     }
                     HorizontalDivider(color = LesinColors.Hairline)
                     Column(verticalArrangement = Arrangement.spacedBy(LesinSpacing.Md)) {
                         Text("Recent sessions", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-                        Text("No sessions yet", color = LesinColors.Muted)
+                        if (state.sessions.isEmpty()) Text("No sessions yet", color = LesinColors.Muted)
+                        state.sessions.forEach { session ->
+                            Column(verticalArrangement = Arrangement.spacedBy(LesinSpacing.Xs)) {
+                                Text("${DateTimeFormatter.formatDate(session.startedAt)} · ${session.subject}", fontWeight = FontWeight.Medium)
+                                session.report?.let { Text(it.topic, color = LesinColors.Muted) }
+                                Text(CurrencyFormatter.formatRupiah(session.price), color = LesinColors.Muted)
+                                TextButton(onClick = { onSessionClick(session.scheduleId) }, enabled = !state.isDeleting) { Text("View report") }
+                            }
+                        }
                     }
                     TextButton(
                         onClick = { onEvent(StudentDetailEvent.DeleteClicked) },
@@ -135,7 +152,7 @@ fun StudentDetailContent(
         AlertDialog(
             onDismissRequest = { onEvent(StudentDetailEvent.DeleteDismissed) },
             title = { Text("Delete student?") },
-            text = { Text("${state.student?.name ?: "This student"} and their schedules will be removed. This cannot be undone.") },
+            text = { Text("${state.student?.name ?: "This student"} and their schedules and session reports will be removed. This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = { onEvent(StudentDetailEvent.DeleteConfirmed) }, enabled = !state.isDeleting) {
                     Text(if (state.isDeleting) "Deleting…" else "Delete", color = LesinColors.Error)
