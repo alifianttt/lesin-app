@@ -22,13 +22,11 @@ Schedule -> Attendance -> Session Report -> Auto Billing -> Payment Tracking
 
 ## Out of scope for the base project
 
-The base project intentionally does not implement all product screens or complete feature flows yet.
+The project implements student management, schedule creation and per-student viewing, today's schedule dashboard, session start/resume/completion, reports, and session history. Attendance is recorded when a session starts. Completed sessions remain unbilled until billing is implemented.
 
 Not included now:
 
-- Full Student UI
-- Full Schedule UI
-- Full Session UI
+- Schedule editing, rescheduling, and cancellation
 - Billing UI
 - Invoice/receipt UI
 - Payment UI
