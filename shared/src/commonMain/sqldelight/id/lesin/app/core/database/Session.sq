@@ -1,0 +1,37 @@
+CREATE TABLE session_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    schedule_id INTEGER NOT NULL UNIQUE REFERENCES schedule_entity(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES student_entity(id) ON DELETE CASCADE,
+    started_at INTEGER NOT NULL,
+    ended_at INTEGER CHECK (ended_at IS NULL OR ended_at >= started_at),
+    subject TEXT NOT NULL,
+    price INTEGER NOT NULL CHECK (price > 0),
+    topic TEXT,
+    progress TEXT CHECK (progress IN ('NEEDS_IMPROVEMENT', 'FAIR', 'GOOD', 'VERY_GOOD')),
+    notes TEXT,
+    homework TEXT,
+    status TEXT NOT NULL CHECK (status IN ('IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+    billing_status TEXT NOT NULL DEFAULT 'UNBILLED' CHECK (billing_status IN ('UNBILLED', 'BILLED')),
+    CHECK (billing_status != 'BILLED' OR status = 'COMPLETED'),
+    CHECK (status != 'COMPLETED' OR (ended_at IS NOT NULL AND topic IS NOT NULL AND length(trim(topic)) > 0 AND progress IS NOT NULL))
+);
+
+CREATE INDEX session_student_start ON session_entity(student_id, started_at);
+
+selectBySchedule:
+SELECT * FROM session_entity WHERE schedule_id = ?;
+
+selectHistory:
+SELECT * FROM session_entity WHERE student_id = ? AND status = 'COMPLETED'
+ORDER BY started_at DESC, id DESC;
+
+selectActive:
+SELECT * FROM session_entity WHERE status = 'IN_PROGRESS' ORDER BY started_at ASC, id ASC;
+
+insertSession:
+INSERT INTO session_entity(schedule_id, student_id, started_at, subject, price, status)
+VALUES (?, ?, ?, ?, ?, 'IN_PROGRESS');
+
+completeSession:
+UPDATE session_entity SET ended_at = ?, topic = ?, progress = ?, notes = ?, homework = ?, status = 'COMPLETED'
+WHERE schedule_id = ? AND status = 'IN_PROGRESS';
