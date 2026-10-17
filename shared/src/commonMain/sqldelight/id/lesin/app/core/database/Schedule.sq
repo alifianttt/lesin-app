@@ -20,3 +20,12 @@ ORDER BY start_time ASC, id ASC;
 insertSchedule:
 INSERT INTO schedule_entity(student_id, scheduled_date, start_time, end_time, subject, price, status, created_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+selectById:
+SELECT * FROM schedule_entity WHERE id = ?;
+
+selectInRange:
+SELECT * FROM schedule_entity WHERE start_time >= ? AND start_time < ? ORDER BY start_time ASC, id ASC;
+
+updateStatus:
+UPDATE schedule_entity SET status = ? WHERE id = ?;

@@ -17,6 +17,13 @@ class ScheduleLocalDataSourceImpl(
         return queries.selectByStudent(studentId, ::ScheduleDto).asFlow().mapToList(Dispatchers.Default)
     }
 
+    override fun observeSchedulesInRange(start: Long, end: Long): Flow<List<ScheduleDto>> =
+        queries.selectInRange(start, end, ::ScheduleDto).asFlow().mapToList(Dispatchers.Default)
+
+    override suspend fun getSchedule(id: Long): ScheduleDto? = withContext(Dispatchers.Default) {
+        queries.selectById(id, ::ScheduleDto).executeAsOneOrNull()
+    }
+
     override suspend fun insertSchedule(schedule: ScheduleDto): Unit = withContext(Dispatchers.Default) {
         queries.insertSchedule(
             student_id = schedule.studentId,

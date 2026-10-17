@@ -17,6 +17,11 @@ class ScheduleRepositoryImpl(
         }
     }
 
+    override fun observeSchedulesInRange(start: Long, end: Long): Flow<List<Schedule>> =
+        localDataSource.observeSchedulesInRange(start, end).map { schedules -> schedules.map { it.toDomain() } }
+
+    override suspend fun getSchedule(id: Long): Schedule? = localDataSource.getSchedule(id)?.toDomain()
+
     override suspend fun createSchedule(schedule: Schedule) {
         localDataSource.insertSchedule(schedule.toDto())
     }
