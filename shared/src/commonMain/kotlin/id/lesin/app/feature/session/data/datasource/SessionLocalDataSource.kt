@@ -9,6 +9,7 @@ interface SessionLocalDataSource {
     fun observeActiveSessions(): Flow<List<SessionDto>>
     fun observeHistory(studentId: Long): Flow<List<SessionDto>>
     suspend fun getSession(scheduleId: Long): SessionDto?
+    suspend fun getCompletedUnbilledSessions(studentId: Long): List<SessionDto>
     suspend fun startSession(scheduleId: Long, startedAt: Long)
     suspend fun completeSession(scheduleId: Long, report: SessionReport, endedAt: Long)
 }

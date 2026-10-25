@@ -11,6 +11,8 @@ class SessionRepositoryImpl(private val localDataSource: SessionLocalDataSource)
     override fun observeActiveSessions() = localDataSource.observeActiveSessions().map { sessions -> sessions.map { it.toDomain() } }
     override fun observeHistory(studentId: Long) = localDataSource.observeHistory(studentId).map { sessions -> sessions.map { it.toDomain() } }
     override suspend fun getSession(scheduleId: Long) = localDataSource.getSession(scheduleId)?.toDomain()
+    override suspend fun getCompletedUnbilledSessions(studentId: Long) =
+        localDataSource.getCompletedUnbilledSessions(studentId).map { it.toDomain() }
     override suspend fun startSession(scheduleId: Long, startedAt: Long) = localDataSource.startSession(scheduleId, startedAt)
     override suspend fun completeSession(scheduleId: Long, report: SessionReport, endedAt: Long) =
         localDataSource.completeSession(scheduleId, report, endedAt)

@@ -97,6 +97,7 @@ fun StudentDetailContent(
                     Column(verticalArrangement = Arrangement.spacedBy(LesinSpacing.Md)) {
                         Text("Billing", fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
                         Text("Every ${student.billingInterval} ${if (student.billingInterval == 1) "session" else "sessions"}")
+                        Text("${state.unbilledSessionCount} / ${student.billingInterval} completed sessions toward the next invoice", color = LesinColors.Muted)
                     }
                     HorizontalDivider(color = LesinColors.Hairline)
                     Column(verticalArrangement = Arrangement.spacedBy(LesinSpacing.Md)) {
@@ -152,7 +153,7 @@ fun StudentDetailContent(
         AlertDialog(
             onDismissRequest = { onEvent(StudentDetailEvent.DeleteDismissed) },
             title = { Text("Delete student?") },
-            text = { Text("${state.student?.name ?: "This student"} and their schedules and session reports will be removed. This cannot be undone.") },
+            text = { Text("${state.student?.name ?: "This student"} and their schedules and session reports will be removed. Students with invoices must be kept to preserve billing history. This cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = { onEvent(StudentDetailEvent.DeleteConfirmed) }, enabled = !state.isDeleting) {
                     Text(if (state.isDeleting) "Deleting…" else "Delete", color = LesinColors.Error)

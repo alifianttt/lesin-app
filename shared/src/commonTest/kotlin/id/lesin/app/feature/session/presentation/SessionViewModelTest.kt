@@ -1,6 +1,8 @@
 package id.lesin.app.feature.session.presentation
 
 import androidx.lifecycle.ViewModelStore
+import id.lesin.app.feature.billing.testBillingRule
+import id.lesin.app.feature.billing.FakeInvoiceRepository
 import id.lesin.app.feature.schedule.FakeScheduleRepository
 import id.lesin.app.feature.schedule.testSchedule
 import id.lesin.app.feature.schedule.domain.model.ScheduleStatus
@@ -41,13 +43,36 @@ class SessionViewModelTest {
     @BeforeTest fun setUp() { Dispatchers.setMain(dispatcher) }
     @AfterTest fun tearDown() { store.clear(); Dispatchers.resetMain() }
 
-    private fun viewModel(repository: FakeSessionRepository) = SessionViewModel(
+    private fun viewModel(
+        repository: FakeSessionRepository,
+        invoices: FakeInvoiceRepository = FakeInvoiceRepository(repository),
+        students: FakeStudentRepository = FakeStudentRepository(listOf(testStudent())),
+    ) = SessionViewModel(
         1L, GetScheduleUseCase(repository.schedules),
-        GetStudentDetailUseCase(FakeStudentRepository(listOf(testStudent()))), GetSessionUseCase(repository),
-        StartSessionUseCase(repository.schedules, repository), CompleteSessionUseCase(repository),
+        GetStudentDetailUseCase(students), GetSessionUseCase(repository),
+        StartSessionUseCase(repository.schedules, repository), CompleteSessionUseCase(repository, testBillingRule(repository, students, invoices)),
     ).also { store.put("session", it) }
 
     private fun repository() = FakeSessionRepository(FakeScheduleRepository(listOf(testSchedule())))
+
+    @Test
+    fun billingFailureEmitsCompletedWithWarningAndKeepsSavedReport() = runTest(dispatcher) {
+        val repository = repository()
+        val invoices = FakeInvoiceRepository(repository).apply { createError = IllegalStateException("disk") }
+        val students = FakeStudentRepository(listOf(testStudent().copy(billingInterval = 1)))
+        val viewModel = viewModel(repository, invoices, students)
+        runCurrent()
+        viewModel.onEvent(SessionEvent.TopicChanged("Fractions"))
+        viewModel.onEvent(SessionEvent.CompleteClicked)
+        runCurrent()
+        val effect = viewModel.effect.first() as SessionEffect.Completed
+        assertNotNull(effect.billingError)
+        assertFalse(viewModel.state.value.isCompleting)
+        assertFalse(viewModel.state.value.hasUnsavedChanges)
+        assertEquals(SessionStatus.COMPLETED, viewModel.state.value.session?.status)
+        assertEquals("Fractions", repository.getSession(1)?.report?.topic)
+        assertEquals(1, repository.completeCount)
+    }
 
     @Test
     fun openingScheduledLessonStartsAttendanceAndLoadsStudent() = runTest(dispatcher) {
@@ -106,7 +131,7 @@ class SessionViewModelTest {
         repository.completeGate!!.complete(Unit)
         runCurrent()
         assertEquals(1, repository.completeCount)
-        assertEquals(SessionEffect.Completed, viewModel.effect.first())
+        assertEquals(SessionEffect.Completed(), viewModel.effect.first())
         assertFalse(viewModel.state.value.hasUnsavedChanges)
         assertEquals(SessionReport("Fractions", StudentProgress.VERY_GOOD, "Good focus"), repository.getSession(1L)?.report)
     }
@@ -127,7 +152,7 @@ class SessionViewModelTest {
         repository.completeError = null
         viewModel.onEvent(SessionEvent.CompleteClicked)
         runCurrent()
-        assertEquals(SessionEffect.Completed, viewModel.effect.first())
+        assertEquals(SessionEffect.Completed(), viewModel.effect.first())
         assertEquals(1, repository.completeCount)
     }
 

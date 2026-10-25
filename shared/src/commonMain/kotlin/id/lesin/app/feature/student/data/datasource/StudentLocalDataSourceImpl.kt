@@ -4,12 +4,13 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import id.lesin.app.core.database.LesinDatabase
 import id.lesin.app.feature.student.data.dto.StudentDto
+import id.lesin.app.feature.student.domain.model.StudentHasInvoicesException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 class StudentLocalDataSourceImpl(
-    database: LesinDatabase,
+    private val database: LesinDatabase,
 ) : StudentLocalDataSource {
 
     private val queries = database.studentQueries
@@ -52,7 +53,10 @@ class StudentLocalDataSourceImpl(
     }
 
     override suspend fun deleteStudent(id: Long): Unit = withContext(Dispatchers.Default) {
-        queries.deleteById(id)
+        database.transaction {
+            if (database.invoiceQueries.countByStudent(id).executeAsOne() > 0L) throw StudentHasInvoicesException()
+            queries.deleteById(id)
+        }
     }
 
     private fun mapStudent(

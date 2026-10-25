@@ -3,7 +3,9 @@ package id.lesin.app.feature.student.presentation.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.lesin.app.feature.schedule.domain.usecase.GetSchedulesByStudentUseCase
+import id.lesin.app.feature.session.domain.model.SessionBillingStatus
 import id.lesin.app.feature.session.domain.usecase.GetSessionHistoryUseCase
+import id.lesin.app.feature.student.domain.model.StudentHasInvoicesException
 import id.lesin.app.feature.student.domain.usecase.DeleteStudentUseCase
 import id.lesin.app.feature.student.domain.usecase.GetStudentDetailUseCase
 import kotlinx.coroutines.CancellationException
@@ -61,7 +63,8 @@ class StudentDetailViewModel(
                     _state.update { it.copy(isLoading = false, error = "Unable to load student details. Please try again.") }
                 }
                 .collect { (student, schedules, sessions) ->
-                    _state.update { it.copy(isLoading = false, student = student, schedules = schedules, sessions = sessions, error = null) }
+                    _state.update { it.copy(isLoading = false, student = student, schedules = schedules, sessions = sessions,
+                        unbilledSessionCount = sessions.count { session -> session.billingStatus == SessionBillingStatus.UNBILLED }, error = null) }
                 }
         }
     }
@@ -75,6 +78,8 @@ class StudentDetailViewModel(
                 _effect.send(StudentDetailEffect.Deleted)
             } catch (cancelled: CancellationException) {
                 throw cancelled
+            } catch (failure: StudentHasInvoicesException) {
+                _state.update { it.copy(isDeleting = false, isDeleteConfirmationVisible = false, error = failure.message) }
             } catch (_: Exception) {
                 _state.update { it.copy(isDeleting = false, isDeleteConfirmationVisible = false,
                     error = "Unable to delete this student. Please try again.") }

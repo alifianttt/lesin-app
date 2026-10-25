@@ -43,6 +43,12 @@ internal class FakeSessionRepository(
         loadError?.let { throw it }
         return sessions.value.firstOrNull { it.scheduleId == scheduleId }
     }
+    override suspend fun getCompletedUnbilledSessions(studentId: Long): List<Session> {
+        loadError?.let { throw it }
+        return sessions.value.filter {
+            it.studentId == studentId && it.status == SessionStatus.COMPLETED && it.billingStatus == SessionBillingStatus.UNBILLED
+        }.sortedWith(compareBy({ it.startedAt }, { it.id }))
+    }
     override suspend fun startSession(scheduleId: Long, startedAt: Long) {
         startError?.let { throw it }
         val schedule = schedules.getSchedule(scheduleId) ?: error("Missing schedule")

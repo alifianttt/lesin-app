@@ -9,6 +9,8 @@ interface SessionRepository {
     fun observeActiveSessions(): Flow<List<Session>>
     fun observeHistory(studentId: Long): Flow<List<Session>>
     suspend fun getSession(scheduleId: Long): Session?
+    /** Completed, unbilled sessions ordered by attendance time, then ID. */
+    suspend fun getCompletedUnbilledSessions(studentId: Long): List<Session>
     /** Atomically checks schedule state, creates attendance, and marks the schedule in progress. */
     suspend fun startSession(scheduleId: Long, startedAt: Long)
     /** Atomically saves the report and completes both session and schedule. */

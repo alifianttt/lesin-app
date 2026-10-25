@@ -1,5 +1,6 @@
 package id.lesin.app.feature.session.domain
 
+import id.lesin.app.feature.billing.testBillingRule
 import id.lesin.app.feature.schedule.FakeScheduleRepository
 import id.lesin.app.feature.schedule.domain.model.ScheduleStatus
 import id.lesin.app.feature.schedule.testSchedule
@@ -58,7 +59,7 @@ class SessionUseCasesTest {
     fun completingSavesTrimmedReportAndLeavesBillingUnbilled() = runTest {
         val schedules = FakeScheduleRepository(listOf(testSchedule().copy(status = ScheduleStatus.IN_PROGRESS)))
         val sessions = FakeSessionRepository(schedules, listOf(testSession()))
-        CompleteSessionUseCase(sessions, clock)(1L, report)
+        CompleteSessionUseCase(sessions, testBillingRule(sessions), clock)(1L, report)
         val session = sessions.getSession(1L)!!
         assertEquals(SessionStatus.COMPLETED, session.status)
         assertEquals(ScheduleStatus.COMPLETED, schedules.getSchedule(1L)?.status)
@@ -71,11 +72,11 @@ class SessionUseCasesTest {
     @Test
     fun blankReportsMissingSessionsAndRepeatedCompletionAreRejected() = runTest {
         val sessions = FakeSessionRepository(initial = listOf(testSession()))
-        assertFailsWith<SessionReportException> { CompleteSessionUseCase(sessions, clock)(1L, report.copy(topic = "  ")) }
-        assertFailsWith<SessionStateException> { CompleteSessionUseCase(sessions, clock)(99L, report) }
+        assertFailsWith<SessionReportException> { CompleteSessionUseCase(sessions, testBillingRule(sessions), clock)(1L, report.copy(topic = "  ")) }
+        assertFailsWith<SessionStateException> { CompleteSessionUseCase(sessions, testBillingRule(sessions), clock)(99L, report) }
         for (status in listOf(SessionStatus.COMPLETED, SessionStatus.CANCELLED)) {
             sessions.sessions.value = listOf(testSession().copy(status = status))
-            assertFailsWith<SessionStateException> { CompleteSessionUseCase(sessions, clock)(1L, report) }
+            assertFailsWith<SessionStateException> { CompleteSessionUseCase(sessions, testBillingRule(sessions), clock)(1L, report) }
         }
         assertEquals(0, sessions.completeCount)
     }
@@ -83,7 +84,7 @@ class SessionUseCasesTest {
     @Test
     fun completionRejectsDeviceClockBeforeStart() = runTest {
         val sessions = FakeSessionRepository(initial = listOf(testSession().copy(startedAt = clock.now().toEpochMilliseconds() + 1)))
-        assertFailsWith<SessionStateException> { CompleteSessionUseCase(sessions, clock)(1L, report) }
+        assertFailsWith<SessionStateException> { CompleteSessionUseCase(sessions, testBillingRule(sessions), clock)(1L, report) }
         assertEquals(0, sessions.completeCount)
     }
 

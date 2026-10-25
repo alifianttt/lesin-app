@@ -35,3 +35,10 @@ VALUES (?, ?, ?, ?, ?, 'IN_PROGRESS');
 completeSession:
 UPDATE session_entity SET ended_at = ?, topic = ?, progress = ?, notes = ?, homework = ?, status = 'COMPLETED'
 WHERE schedule_id = ? AND status = 'IN_PROGRESS';
+
+selectCompletedUnbilled:
+SELECT * FROM session_entity WHERE student_id = ? AND status = 'COMPLETED' AND billing_status = 'UNBILLED'
+ORDER BY started_at ASC, id ASC;
+
+markBilled:
+UPDATE session_entity SET billing_status = 'BILLED' WHERE id = ? AND status = 'COMPLETED' AND billing_status = 'UNBILLED';

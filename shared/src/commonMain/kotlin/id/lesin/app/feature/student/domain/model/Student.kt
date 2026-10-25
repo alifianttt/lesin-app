@@ -10,3 +10,7 @@ data class Student(
     val billingInterval: Int,
     val createdAt: Long,
 )
+
+class StudentHasInvoicesException : IllegalStateException(
+    "This student has invoices and cannot be deleted. Their billing history must be kept.",
+)

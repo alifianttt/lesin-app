@@ -22,13 +22,12 @@ Schedule -> Attendance -> Session Report -> Auto Billing -> Payment Tracking
 
 ## Out of scope for the base project
 
-The project implements student management, schedule creation and per-student viewing, today's schedule dashboard, session start/resume/completion, reports, and session history. Attendance is recorded when a session starts. Completed sessions remain unbilled until billing is implemented.
+The project implements student management, schedule creation and per-student viewing, today's schedule dashboard, session start/resume/completion, reports, session history, automatic billing, invoice list/detail screens, and student billing progress. Attendance is recorded when a session starts. Completing a session checks the student's billing interval and invoices eligible completed sessions atomically. Opening Billing recovers pending full intervals, including sessions completed before billing was available. Invoice items preserve session prices and reference their reports; invoiced records cannot be deleted.
 
 Not included now:
 
 - Schedule editing, rescheduling, and cancellation
-- Billing UI
-- Invoice/receipt UI
+- Receipt UI
 - Payment UI
 - Backend/API
 - Authentication

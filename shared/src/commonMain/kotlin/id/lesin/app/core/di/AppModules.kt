@@ -2,6 +2,17 @@ package id.lesin.app.core.di
 
 import id.lesin.app.core.database.DatabaseDriverFactory
 import id.lesin.app.core.database.LesinDatabase
+import id.lesin.app.feature.billing.data.datasource.InvoiceLocalDataSource
+import id.lesin.app.feature.billing.data.datasource.InvoiceLocalDataSourceImpl
+import id.lesin.app.feature.billing.data.repository.InvoiceRepositoryImpl
+import id.lesin.app.feature.billing.domain.repository.InvoiceRepository
+import id.lesin.app.feature.billing.domain.usecase.CheckBillingRuleUseCase
+import id.lesin.app.feature.billing.domain.usecase.GenerateInvoiceUseCase
+import id.lesin.app.feature.billing.domain.usecase.GeneratePendingInvoicesUseCase
+import id.lesin.app.feature.billing.domain.usecase.GetInvoiceDetailUseCase
+import id.lesin.app.feature.billing.domain.usecase.GetInvoicesUseCase
+import id.lesin.app.feature.billing.presentation.detail.InvoiceDetailViewModel
+import id.lesin.app.feature.billing.presentation.list.BillingViewModel
 import id.lesin.app.feature.home.presentation.HomeViewModel
 import id.lesin.app.feature.schedule.data.datasource.ScheduleLocalDataSource
 import id.lesin.app.feature.schedule.data.datasource.ScheduleLocalDataSourceImpl
@@ -45,6 +56,7 @@ fun appModules(databaseDriverFactory: DatabaseDriverFactory) = listOf(
     scheduleModule,
     homeModule,
     sessionModule,
+    billingModule,
 )
 
 private fun databaseModule(databaseDriverFactory: DatabaseDriverFactory) = module {
@@ -89,9 +101,21 @@ private val sessionModule = module {
     single<SessionLocalDataSource> { SessionLocalDataSourceImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     factory { StartSessionUseCase(get(), get()) }
-    factory { CompleteSessionUseCase(get()) }
+    factory { CompleteSessionUseCase(get(), get()) }
     factory { GetSessionUseCase(get()) }
     factory { GetActiveSessionsUseCase(get()) }
     factory { GetSessionHistoryUseCase(get()) }
     viewModel { parameters -> SessionViewModel(parameters.get<Long>(), get(), get(), get(), get(), get()) }
+}
+
+private val billingModule = module {
+    single<InvoiceLocalDataSource> { InvoiceLocalDataSourceImpl(get()) }
+    single<InvoiceRepository> { InvoiceRepositoryImpl(get()) }
+    factory { GenerateInvoiceUseCase(get()) }
+    factory { CheckBillingRuleUseCase(get(), get(), get()) }
+    factory { GeneratePendingInvoicesUseCase(get(), get()) }
+    factory { GetInvoicesUseCase(get()) }
+    factory { GetInvoiceDetailUseCase(get()) }
+    viewModel { BillingViewModel(get(), get()) }
+    viewModel { parameters -> InvoiceDetailViewModel(parameters.get<Long>(), get()) }
 }

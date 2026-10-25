@@ -2,6 +2,7 @@ package id.lesin.app.feature.session.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import id.lesin.app.feature.billing.domain.model.SessionBillingException
 import id.lesin.app.feature.schedule.domain.usecase.GetScheduleUseCase
 import id.lesin.app.feature.session.domain.model.SessionReport
 import id.lesin.app.feature.session.domain.model.SessionReportException
@@ -101,11 +102,14 @@ class SessionViewModel(
             try {
                 completeSession(scheduleId, SessionReport(form.topic, form.progress, form.notes, form.homework))
                 _state.update { it.copy(isCompleting = false, hasUnsavedChanges = false) }
-                _effect.send(SessionEffect.Completed)
+                _effect.send(SessionEffect.Completed())
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (invalid: SessionReportException) {
                 _state.update { it.copy(isCompleting = false, topicError = invalid.message) }
+            } catch (failure: SessionBillingException) {
+                _state.update { it.copy(isCompleting = false, hasUnsavedChanges = false) }
+                _effect.send(SessionEffect.Completed(failure.message))
             } catch (failure: Exception) {
                 _state.update { it.copy(isCompleting = false, error = failure.sessionMessage("Unable to complete this session. Your report is still here; please try again.")) }
             }

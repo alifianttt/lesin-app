@@ -26,6 +26,10 @@ class SessionLocalDataSourceImpl(private val database: LesinDatabase) : SessionL
         queries.selectBySchedule(scheduleId, ::SessionDto).executeAsOneOrNull()
     }
 
+    override suspend fun getCompletedUnbilledSessions(studentId: Long): List<SessionDto> = withContext(Dispatchers.Default) {
+        queries.selectCompletedUnbilled(studentId, ::SessionDto).executeAsList()
+    }
+
     override suspend fun startSession(scheduleId: Long, startedAt: Long): Unit = withContext(Dispatchers.Default) {
         database.transaction {
             val schedule = database.scheduleQueries.selectById(scheduleId).executeAsOneOrNull()

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import id.lesin.app.feature.session.FakeSessionRepository
 import id.lesin.app.feature.session.testSession
 import id.lesin.app.feature.session.domain.model.SessionStatus
+import id.lesin.app.feature.session.domain.model.SessionBillingStatus
+import id.lesin.app.feature.student.domain.model.StudentHasInvoicesException
 import id.lesin.app.feature.session.domain.usecase.GetSessionHistoryUseCase
 import androidx.lifecycle.ViewModelStore
 import id.lesin.app.feature.schedule.FakeScheduleRepository
@@ -320,6 +322,35 @@ class StudentViewModelTest {
         viewModel.onEvent(StudentDetailEvent.RetryClicked)
         runCurrent()
         assertNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun billingProgressCountsOnlyCompletedUnbilledSessionsAndUpdatesAfterInvoicing() = runTest(dispatcher) {
+        val completed = testSession().copy(status = SessionStatus.COMPLETED)
+        val sessions = FakeSessionRepository(initial = listOf(
+            completed, completed.copy(id = 2, scheduleId = 2, billingStatus = SessionBillingStatus.BILLED),
+            testSession().copy(id = 3, scheduleId = 3), completed.copy(id = 4, scheduleId = 4, studentId = 2),
+        ))
+        val viewModel = detail(FakeStudentRepository(listOf(testStudent())), sessions = sessions)
+        runCurrent()
+        assertEquals(1, viewModel.state.value.unbilledSessionCount)
+        sessions.sessions.value = sessions.sessions.value.map { it.copy(billingStatus = SessionBillingStatus.BILLED) }
+        runCurrent()
+        assertEquals(0, viewModel.state.value.unbilledSessionCount)
+    }
+
+    @Test
+    fun invoicedStudentDeletionShowsReasonAndKeepsStudent() = runTest(dispatcher) {
+        val students = FakeStudentRepository(listOf(testStudent())).apply { deleteError = StudentHasInvoicesException() }
+        val viewModel = detail(students)
+        runCurrent()
+        viewModel.onEvent(StudentDetailEvent.DeleteClicked)
+        viewModel.onEvent(StudentDetailEvent.DeleteConfirmed)
+        runCurrent()
+        assertEquals(StudentHasInvoicesException().message, viewModel.state.value.error)
+        assertFalse(viewModel.state.value.isDeleteConfirmationVisible)
+        assertFalse(viewModel.state.value.isDeleting)
+        assertNotNull(viewModel.state.value.student)
     }
 
 }

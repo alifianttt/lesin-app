@@ -31,6 +31,6 @@ sealed interface SessionEvent {
 }
 
 sealed interface SessionEffect {
-    data object Completed : SessionEffect
+    data class Completed(val billingError: String? = null) : SessionEffect
     data object NavigateBack : SessionEffect
 }

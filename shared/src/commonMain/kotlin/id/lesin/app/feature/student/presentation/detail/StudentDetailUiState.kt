@@ -9,6 +9,7 @@ data class StudentDetailUiState(
     val student: Student? = null,
     val schedules: List<Schedule> = emptyList(),
     val sessions: List<Session> = emptyList(),
+    val unbilledSessionCount: Int = 0,
     val isDeleteConfirmationVisible: Boolean = false,
     val isDeleting: Boolean = false,
     val error: String? = null,

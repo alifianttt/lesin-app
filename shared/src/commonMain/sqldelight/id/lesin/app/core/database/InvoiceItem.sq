@@ -1,0 +1,19 @@
+CREATE TABLE invoice_item_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL REFERENCES invoice_entity(id) ON DELETE RESTRICT,
+    session_id INTEGER NOT NULL UNIQUE REFERENCES session_entity(id) ON DELETE RESTRICT,
+    schedule_id INTEGER NOT NULL REFERENCES schedule_entity(id) ON DELETE RESTRICT,
+    description TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    session_started_at INTEGER NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount > 0)
+);
+
+CREATE INDEX invoice_item_invoice ON invoice_item_entity(invoice_id);
+
+selectByInvoice:
+SELECT * FROM invoice_item_entity WHERE invoice_id = ? ORDER BY session_started_at ASC, session_id ASC;
+
+insertItem:
+INSERT INTO invoice_item_entity(invoice_id, session_id, schedule_id, description, topic, session_started_at, amount)
+VALUES (?, ?, ?, ?, ?, ?, ?);

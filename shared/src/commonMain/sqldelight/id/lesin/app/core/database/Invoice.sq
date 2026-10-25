@@ -1,0 +1,43 @@
+CREATE TABLE invoice_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES student_entity(id) ON DELETE RESTRICT,
+    student_name TEXT NOT NULL,
+    invoice_number TEXT NOT NULL UNIQUE,
+    session_count INTEGER NOT NULL CHECK (session_count > 0),
+    total_amount INTEGER NOT NULL CHECK (total_amount > 0),
+    status TEXT NOT NULL DEFAULT 'UNPAID' CHECK (status IN ('UNPAID', 'PAID')),
+    created_at INTEGER NOT NULL,
+    due_at INTEGER,
+    paid_at INTEGER,
+    CHECK ((status = 'UNPAID' AND paid_at IS NULL) OR (status = 'PAID' AND paid_at IS NOT NULL))
+);
+
+CREATE INDEX invoice_student_created ON invoice_entity(student_id, created_at);
+
+CREATE TABLE invoice_sequence (
+    year INTEGER NOT NULL PRIMARY KEY,
+    sequence INTEGER NOT NULL CHECK (sequence > 0)
+);
+
+selectAll:
+SELECT * FROM invoice_entity ORDER BY created_at DESC, id DESC;
+
+selectById:
+SELECT * FROM invoice_entity WHERE id = ?;
+
+countByStudent:
+SELECT count(*) FROM invoice_entity WHERE student_id = ?;
+
+insertInvoice:
+INSERT INTO invoice_entity(student_id, student_name, invoice_number, session_count, total_amount, created_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+lastInsertedId:
+SELECT last_insert_rowid();
+
+advanceSequence:
+INSERT OR REPLACE INTO invoice_sequence(year, sequence)
+VALUES (:year, coalesce((SELECT sequence FROM invoice_sequence WHERE year = :year), 0) + 1);
+
+selectSequence:
+SELECT sequence FROM invoice_sequence WHERE year = ?;

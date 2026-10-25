@@ -39,7 +39,7 @@ import org.koin.core.parameter.parametersOf
 fun SessionScreen(
     scheduleId: Long,
     onBack: () -> Unit,
-    onCompleted: () -> Unit,
+    onCompleted: (String?) -> Unit,
     viewModel: SessionViewModel = koinViewModel { parametersOf(scheduleId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -49,7 +49,7 @@ fun SessionScreen(
         viewModel.effect.collect {
             when (it) {
                 SessionEffect.NavigateBack -> back()
-                SessionEffect.Completed -> completed()
+                is SessionEffect.Completed -> completed(it.billingError)
             }
         }
     }

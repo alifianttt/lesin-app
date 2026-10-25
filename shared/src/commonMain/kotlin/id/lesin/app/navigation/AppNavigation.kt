@@ -21,6 +21,8 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreProvider
+import id.lesin.app.feature.billing.presentation.detail.InvoiceDetailScreen
+import id.lesin.app.feature.billing.presentation.list.BillingScreen
 import id.lesin.app.feature.home.presentation.HomeScreen
 import id.lesin.app.feature.schedule.presentation.form.ScheduleFormScreen
 import id.lesin.app.feature.session.presentation.SessionScreen
@@ -34,9 +36,7 @@ fun AppNavigation() {
     var route by rememberSaveable(stateSaver = RouteSaver) { mutableStateOf<Route>(Route.Home) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val onBillingClick: () -> Unit = {
-        scope.launch { snackbarHostState.showSnackbar("Billing is not available yet") }
-    }
+    val onBillingClick: () -> Unit = { route = Route.Billing }
     val onBack: () -> Unit = { route = route.parent() }
     NavigationBackHandler(enabled = route != Route.Home, onBack = onBack)
 
@@ -49,6 +49,16 @@ fun AppNavigation() {
                 val owner = rememberRouteViewModelStoreOwner(route)
                 CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
                     when (val currentRoute = route) {
+                        Route.Billing -> BillingScreen(
+                            onInvoiceClick = { route = Route.InvoiceDetail(it) },
+                            onHomeClick = { route = Route.Home },
+                            onStudentsClick = { route = Route.Students },
+                        )
+                        is Route.InvoiceDetail -> InvoiceDetailScreen(
+                            invoiceId = currentRoute.invoiceId,
+                            onBack = onBack,
+                            onSessionClick = { route = Route.Session(it, invoiceId = currentRoute.invoiceId) },
+                        )
                         Route.Home -> HomeScreen(
                             onStartSession = { route = Route.Session(it) },
                             onStudentsClick = { route = Route.Students },
@@ -82,9 +92,9 @@ fun AppNavigation() {
                         is Route.Session -> SessionScreen(
                             scheduleId = currentRoute.scheduleId,
                             onBack = onBack,
-                            onCompleted = {
+                            onCompleted = { billingError ->
                                 route = currentRoute.parent()
-                                scope.launch { snackbarHostState.showSnackbar("Session completed") }
+                                scope.launch { snackbarHostState.showSnackbar(billingError ?: "Session completed") }
                             },
                         )
                         is Route.ScheduleForm -> ScheduleFormScreen(

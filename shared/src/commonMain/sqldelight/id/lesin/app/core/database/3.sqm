@@ -1,0 +1,33 @@
+CREATE TABLE invoice_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES student_entity(id) ON DELETE RESTRICT,
+    student_name TEXT NOT NULL,
+    invoice_number TEXT NOT NULL UNIQUE,
+    session_count INTEGER NOT NULL CHECK (session_count > 0),
+    total_amount INTEGER NOT NULL CHECK (total_amount > 0),
+    status TEXT NOT NULL DEFAULT 'UNPAID' CHECK (status IN ('UNPAID', 'PAID')),
+    created_at INTEGER NOT NULL,
+    due_at INTEGER,
+    paid_at INTEGER,
+    CHECK ((status = 'UNPAID' AND paid_at IS NULL) OR (status = 'PAID' AND paid_at IS NOT NULL))
+);
+
+CREATE INDEX invoice_student_created ON invoice_entity(student_id, created_at);
+
+CREATE TABLE invoice_sequence (
+    year INTEGER NOT NULL PRIMARY KEY,
+    sequence INTEGER NOT NULL CHECK (sequence > 0)
+);
+
+CREATE TABLE invoice_item_entity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL REFERENCES invoice_entity(id) ON DELETE RESTRICT,
+    session_id INTEGER NOT NULL UNIQUE REFERENCES session_entity(id) ON DELETE RESTRICT,
+    schedule_id INTEGER NOT NULL REFERENCES schedule_entity(id) ON DELETE RESTRICT,
+    description TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    session_started_at INTEGER NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount > 0)
+);
+
+CREATE INDEX invoice_item_invoice ON invoice_item_entity(invoice_id);
